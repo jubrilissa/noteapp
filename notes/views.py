@@ -2,21 +2,22 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.settings import api_settings
 from rest_framework.pagination import PageNumberPagination
+
 from django.http import Http404
 
-from django.core.paginator import Paginator
 from notes.serializers import NoteSerializer
 from notes.models import Note
 
 
 class NotePagination(PageNumberPagination):
     page_size = 2
+    max_page_size = 2
+
 
 class NoteListView(APIView):
     """List all notes or create a new note"""
-    pagination_class = api_settings.DEFAULT_PAGINATION_CLASS
+    pagination_class = NotePagination
 
     def get(self, request):
         notes = Note.objects.all()
