@@ -8,6 +8,7 @@ from django.http import Http404
 
 from notes.serializers import NoteSerializer
 from notes.models import Note
+from notes.mixins import NotePaginationMixin
 
 
 class NotePagination(PageNumberPagination):
@@ -15,47 +16,20 @@ class NotePagination(PageNumberPagination):
     max_page_size = 2
 
 
-class NoteListView(APIView):
+class NoteListView(APIView, NotePaginationMixin):
     """List all notes or create a new note"""
     pagination_class = NotePagination
+    queryset = Note.objects.all()
+    serializer_class = NoteSerializer
 
     def get(self, request):
-        notes = Note.objects.all()
-        page = self.paginate_queryset(notes)
+        page = self.paginate_queryset(self.queryset)
 
         if page is not None:
-            serializer = NoteSerializer(notes, many=True)
+            serializer = NoteSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-        serializer = NoteSerializer(notes, many=True)
+        serializer = NoteSerializer(self.queryset, many=True)
         return Response(serializer.data)
-
-
-    @property
-    def paginator(self):
-        """
-        The paginator instance associated with the view, or `None`.
-        """
-        if not hasattr(self, '_paginator'):
-            if self.pagination_class is None:
-                self._paginator = None
-            else:
-                self._paginator = self.pagination_class()
-        return self._paginator
-
-    def paginate_queryset(self, queryset):
-        """
-        Return a single page of results, or `None` if pagination is disabled.
-        """
-        if self.paginator is None:
-            return None
-        return self.paginator.paginate_queryset(queryset, self.request, view=self)
-
-    def get_paginated_response(self, data):
-        """
-        Return a paginated style `Response` object for the given output data.
-        """
-        assert self.paginator is not None
-        return self.paginator.get_paginated_response(data)
 
     def post(self, request):
         serializer = NoteSerializer(data=request.data)
