@@ -1,10 +1,12 @@
-
+from django.utils import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 
 from django.http import Http404
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 
 from notes.serializers import NoteSerializer
 from notes.models import Note
@@ -22,8 +24,13 @@ class NoteListView(APIView, NotePaginationMixin):
     queryset = Note.objects.all()
     serializer_class = NoteSerializer
 
+    @method_decorator(cache_page(60 * 15))
+    def dispatch(self, *args, **kwargs):
+        return super(NoteListView, self).dispatch(*args, **kwargs)
+
     def get(self, request):
         page = self.paginate_queryset(self.queryset)
+        # data = cache.get(page)
 
         if page is not None:
             serializer = NoteSerializer(page, many=True)
